@@ -173,9 +173,18 @@ def install_requirements(venv_path):
 def install_python_in_venv(venv_path):
     python_installer_url = f"https://www.python.org/ftp/python/{PYTHON_VERSION}/python-{PYTHON_VERSION}-amd64.exe"
     installer_path = os.path.join(venv_path, PYTHON_INSTALLER)
-    
-    print(f"[{GREEN} -- {RESET}] Downloading Python {PYTHON_VERSION} installer...")
-    run_command(f"curl -o {installer_path} {python_installer_url}")
+    os.makedirs(venv_path, exist_ok=True)
+
+    print(f"[{GREEN} -- {RESET}] Downloading Python {PYTHON_VERSION} installer using urllib...")
+    try:
+        with urllib.request.urlopen(python_installer_url) as response, open(installer_path, "wb") as out_file:
+            shutil.copyfileobj(response, out_file)
+        print(f"[{GREEN} OK {RESET}] Python installer downloaded to {installer_path}")
+        logging.info(f"Python installer downloaded to {installer_path}")
+    except Exception as e:
+        print(f"[{RED} FAILED {RESET}] Failed to download Python installer: {e}")
+        logging.error(f"Failed to download Python installer: {e}")
+        sys.exit(1)
 
     print(f"[{GREEN} -- {RESET}] Installing Python {PYTHON_VERSION} in the virtual environment...")
     run_command(f"{installer_path} /quiet InstallAllUsers=0 TargetDir={venv_path}")
