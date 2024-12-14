@@ -5,4 +5,3 @@ pandas==1.5.3
 mplfinance
 colorama
 matplotlib==3.7.1
-./ta_lib-0.5.1-cp311-cp311-win_amd64.whl

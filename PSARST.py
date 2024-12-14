@@ -8,7 +8,6 @@ from matplotlib import style
 from mplfinance.original_flavor import candlestick_ohlc
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-import talib
 import math
 import warnings
 warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
@@ -19,6 +18,52 @@ warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning
 def extract_data(ticker, start_date, end_date):
     data = yf.download(ticker, start=start_date, end=end_date)
     return data
+
+def calculate_sar(high, low, acceleration=0.02, max_acceleration=0.2):
+    """
+    Calculate Parabolic SAR for given high and low price series.
+    """
+    sar = []
+    af = acceleration  # Initialize acceleration factor
+    ep = low[0]  # Extreme point (start with the first low)
+    is_long = True  # Assume an uptrend at the start
+    prev_sar = low[0]  # Start SAR with the first low
+
+    for i in range(len(high)):
+        if i == 0:
+            sar.append(prev_sar)  # Initial SAR
+            continue
+
+        # Update SAR based on trend direction
+        current_sar = prev_sar + af * (ep - prev_sar)
+
+        # Adjust SAR based on trend direction
+        if is_long:
+            if current_sar > low[i]:
+                is_long = False
+                current_sar = ep  # Switch to EP
+                af = acceleration  # Reset acceleration factor
+                ep = high[i]  # Reset EP for downtrend
+            else:
+                if high[i] > ep:  # Update EP for an uptrend
+                    ep = high[i]
+                    af = min(af + acceleration, max_acceleration)  # Increase AF
+        else:
+            if current_sar < high[i]:
+                is_long = True
+                current_sar = ep  # Switch to EP
+                af = acceleration  # Reset acceleration factor
+                ep = low[i]  # Reset EP for uptrend
+            else:
+                if low[i] < ep:  # Update EP for a downtrend
+                    ep = low[i]
+                    af = min(af + acceleration, max_acceleration)  # Increase AF
+
+        prev_sar = current_sar  # Update previous SAR
+        sar.append(current_sar)
+
+    return pd.Series(sar, index=high.index)
+
 
 # Function to calculate various technical indicators
 def indicators(data):
@@ -40,7 +85,7 @@ def indicators(data):
     data = data[['Open', 'High', 'Low', 'Close', 'Volume', 'RSI', 'ATR', 'SuperTrend']]
     
     # Calculate Parabolic SAR (Stop and Reverse)
-    data['SAR'] = talib.SAR(data['High'], data['Low'], acceleration=0.02, maximum=0.2)
+    data['SAR'] = calculate_sar(data['High'], data['Low'], acceleration=0.02, maximum=0.2)
     
     # Drop any rows with missing values
     data.dropna(inplace=True)
