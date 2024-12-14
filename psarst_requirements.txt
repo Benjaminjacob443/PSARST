@@ -1,0 +1,8 @@
+./TA_Lib-0.4.28-cp311-cp311-win_amd64.whl
+yfinance==0.2.13
+pandas-ta==0.3.14b0
+numpy==1.24.3
+pandas==1.5.3
+mplfinance
+matplotlib==3.7.1
+ta-lib==0.4.28
