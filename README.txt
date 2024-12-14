@@ -18,3 +18,7 @@ Welcome to README file for PSARST!
 # With the virtual environment now active:
 - Run 'pip install -r psarst_requirements.txt' on the terminal to install all the dependencies for the program
 - Run the program using 'psarst_run.exe' or directly from 'PSARST.py' with your virtual environment still active
+
+# Disable Antivirus for the executable to run without interruptions.
+
+# The executable and ta-lib wheel file only supports 64-bit architecture. You can download the ta-lib wheel file according to your system specs manually in case of any errors and run 'PSARST.py' from an IDE after installing the necessary packages
