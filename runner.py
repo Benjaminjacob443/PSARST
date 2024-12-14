@@ -1,15 +1,13 @@
 import os
 import subprocess
-subprocess.run("python -m pip install colorama", check=True, shell=True)
-import sys
 from pathlib import Path
+import sys
 import shutil
 import datetime
 import re
 import logging
-import platform
-from colorama import init, Fore, Style
 import urllib.request
+from colorama import init, Fore, Style
 
 # Initialize colorama
 init()
@@ -22,14 +20,13 @@ RESET = Style.RESET_ALL
 # Configuration Constants
 VENV_NAME = "psarst_env"
 REQUIREMENTS_FILE = 'psarst_requirements.txt'
-SCRIPT_DIR = Path(__file__).parent
-requirements_path = SCRIPT_DIR / REQUIREMENTS_FILE
-SCRIPT_PATH = "PSARST.py"
 PYTHON_VERSION = "3.11.1"
 LOGS_DIR = "logs"
 PYTHON_INSTALLER = "python-installer.exe"
 LOCAL_PYTHON_DIR = "local_python"
 
+requirements_path = Path(REQUIREMENTS_FILE)
+SCRIPT_PATH = "PSARST.py"
 
 # Logging Setup
 def setup_logging():
@@ -72,75 +69,12 @@ def check_python_version(venv_path):
     return False
 
 # Dependencies Check
-# def dependencies_installed(venv_path):
-#     pip_path = venv_path / "Scripts" / "pip" if os.name == "nt" else venv_path / "bin" / "pip"
-    
-#     def clean_version(version_str):
-#         # Remove any extra characters that might be part of the version
-#         return re.sub(r'[^0-9.]', '', version_str.strip())
-
-#     try:
-#         with open(requirements_path, "r") as f:
-#             requirements = f.readlines()
-
-#         for req in requirements:
-#             req = req.strip()
-#             if req:  # Skip empty lines
-#                 # Skip ta-lib dependency checking entirely
-#                 if "TA_Lib" in req:
-#                     continue  # Skip checking ta-lib and move to the next package
-
-#                 # Check if the package is already installed
-#                 result = subprocess.run(
-#                     [pip_path, "show", req.split("==")[0]],  # Only check the package name
-#                     stdout=subprocess.PIPE,
-#                     stderr=subprocess.PIPE,
-#                 )
-#                 if result.returncode != 0:  # If package not found
-#                     print(f"[{RED} MISSING {RESET}] {req} is not installed.")
-#                     logging.error(f"{req} is not installed.")
-#                     return False
-#                 else:
-#                     # Get the installed version from the 'pip show' output
-#                     installed_version = subprocess.run(
-#                         [pip_path, "show", req.split("==")[0]],
-#                         stdout=subprocess.PIPE,
-#                         stderr=subprocess.PIPE,
-#                     )
-#                     installed_version = installed_version.stdout.decode().strip().split('\n')[1].split(': ')[1]
-#                     installed_version = clean_version(installed_version)  # Clean the version string
-                    
-#                     # Compare with required version if specified
-#                     if "==" in req:
-#                         required_version = req.split("==")[1]
-#                         required_version = clean_version(required_version)  # Clean the required version string
-                        
-#                         if installed_version != required_version:
-#                             print(f"[{RED} VERSION MISMATCH {RESET}] {req} installed version {installed_version} doesn't match required {required_version}.")
-#                             logging.error(f"{req} installed version {installed_version} doesn't match required {required_version}.")
-#                             return False
-#                         else:
-#                             print(f"[{GREEN} OK {RESET}] {req} is already installed and up-to-date.")
-#                             logging.info(f"{req} is already installed and up-to-date.")
-#                     else:
-#                         print(f"[{GREEN} OK {RESET}] {req} is already installed (latest version).")
-#                         logging.info(f"{req} is already installed (latest version).")
-#         return True
-
-#     except FileNotFoundError:
-#         print(f"[{RED} FAILED {RESET}] Requirements file '{REQUIREMENTS_FILE}' not found. Exiting.")
-#         logging.error(f"Requirements file '{REQUIREMENTS_FILE}' not found. Exiting.")
-#         sys.exit(1)
-
 def dependencies_installed(venv_path):
     pip_path = venv_path / "Scripts" / "pip" if os.name == "nt" else venv_path / "bin" / "pip"
 
     # Function to clean up version string to avoid issues with non-numeric characters
     def clean_version(version_str):
         return re.sub(r'[^0-9.]', '', version_str.strip())
-
-    # Explicitly resolve the path of the requirements file relative to the script's directory
-    requirements_path = Path(__file__).parent / REQUIREMENTS_FILE
 
     try:
         # Check if the requirements file exists
@@ -197,7 +131,6 @@ def dependencies_installed(venv_path):
 
     except FileNotFoundError as e:
         print(f"[{RED} FAILED {RESET}] {e}")
-        print(requirements_path)
         logging.error(e)
         sys.exit(1)
 
@@ -219,8 +152,8 @@ def create_new_venv(venv_path):
 
 # Main Script Runner
 def run_main_script(venv_path):
-    python_path = venv_path / ("Scripts/python" if os.name == "nt" else "bin/python")
-    print(f"[{GREEN}--{RESET}] Running {SCRIPT_PATH}...")
+    python_path = venv_path / "Scripts" / "python" if os.name == "nt" else venv_path / "bin" / "python"
+    print(f"[{GREEN} -- {RESET}] Running {SCRIPT_PATH}...")
     logging.info(f"Running {SCRIPT_PATH}...")
     run_command(f"{python_path} {SCRIPT_PATH}")
 
@@ -275,8 +208,6 @@ def main():
         logging.error(f"Requirements file '{REQUIREMENTS_FILE}' not found.")
         sys.exit(1)
 
-
-
     # Check Python version and create virtual environment
     python_exe = check_or_install_python()
     if not venv_exists(venv_path):
@@ -285,7 +216,7 @@ def main():
         create_new_venv(venv_path)
         install_requirements(venv_path)
     else:
-        print(f"[{GREEN}OK{RESET}] Virtual environment exists. Validating dependencies...")
+        print(f"[ {GREEN}OK{RESET} ] Virtual environment exists. Validating dependencies...")
         logging.info("Virtual environment exists. Validating dependencies...")
         if not dependencies_installed(venv_path):
             print(f"[{RED}MISSING{RESET}] Dependencies are missing or outdated. Installing...")
