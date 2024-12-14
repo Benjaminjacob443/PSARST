@@ -24,6 +24,9 @@ PYTHON_VERSION = "3.11.1"
 LOGS_DIR = "logs"
 PYTHON_INSTALLER = "python-installer.exe"
 LOCAL_PYTHON_DIR = "local_python"
+TA_LIB_URL = "https://github.com/mrjbq7/ta-lib/archive/refs/heads/master.zip"
+TA_LIB_DIR = "ta-lib-master"
+
 
 requirements_path = Path(REQUIREMENTS_FILE)
 SCRIPT_PATH = "PSARST.py"
@@ -68,6 +71,86 @@ def check_python_version(venv_path):
         return python_version == PYTHON_VERSION
     return False
 
+# def check_and_install_msvc():
+#     try:
+#         # Check if the Visual Studio version is installed by querying the registry (works for Windows)
+#         result = subprocess.run(
+#             ['reg', 'query', 'HKLM\\SOFTWARE\\Microsoft\\VisualStudio\\Setup\\VC'],
+#             stdout=subprocess.PIPE, stderr=subprocess.PIPE
+#         )
+#         if result.returncode == 0:
+#             installed_versions = result.stdout.decode().splitlines()
+#             for line in installed_versions:
+#                 if "Version" in line:
+#                     installed_version = float(line.split(":")[1].strip())
+#                     if installed_version >= MSVC_VERSION_REQUIRED:
+#                         print(f"[{GREEN} OK {RESET}] Microsoft Visual C++ version {installed_version} is installed.")
+#                         logging.info(f"Microsoft Visual C++ version {installed_version} is installed.")
+#                         return True
+
+#         print(f"[{RED}INFO{RESET}] Visual C++ not found. Installing Visual Studio Build Tools...")
+#         logging.info(f"Visual C++ not found. Installing Visual Studio Build Tools...")
+
+#         # Download and install Visual Studio Build Tools if not found
+#         visual_studio_installer_url = "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+#         installer_path = Path("VS_Installer.exe")
+#         with urllib.request.urlopen(visual_studio_installer_url) as response, open(installer_path, "wb") as out_file:
+#             shutil.copyfileobj(response, out_file)
+        
+#         print(f"[{GREEN} -- {RESET}] Visual Studio Build Tools installer downloaded.")
+#         logging.info(f"Visual Studio Build Tools installer downloaded to {installer_path}.")
+
+#         # Run the Visual Studio Installer to install the required components
+#         run_command(f"{installer_path} --quiet --wait --norestart --includeRecommended --add Microsoft.VisualC++BuildTools")
+#         print(f"[{GREEN} OK {RESET}] Visual Studio Build Tools installed.")
+#         logging.info("Visual Studio Build Tools installed.")
+
+#         return True
+
+#     except Exception as e:
+#         print(f"[{RED}FAILED{RESET}] Failed to install Visual Studio Build Tools: {e}")
+#         logging.error(f"Failed to install Visual Studio Build Tools: {e}")
+#         return False
+
+# def install_ta_lib():
+#     try:
+#         print(f"[{GREEN} -- {RESET}] Installing TA-Lib from source...")
+
+#         # Download the TA-Lib source code
+#         ta_lib_zip = "ta-lib.zip"
+#         urllib.request.urlretrieve(TA_LIB_URL, ta_lib_zip)
+#         print(f"[{GREEN} -- {RESET}] TA-Lib source code downloaded.")
+
+#         # Unzip the downloaded TA-Lib source code
+#         shutil.unpack_archive(ta_lib_zip, TA_LIB_DIR)
+#         print(f"[{GREEN} -- {RESET}] TA-Lib source code extracted.")
+
+#         # Build and install TA-Lib from source
+#         ta_lib_path = Path(TA_LIB_DIR)
+#         if os.name == "nt":
+#             # For Windows, use the MSVC compiler if Visual Studio Build Tools are installed
+#             if not check_and_install_msvc():
+#                 print(f"[{RED}FAILED{RESET}] Could not install Visual Studio Build Tools. Exiting installation.")
+#                 logging.error("Failed to install Visual Studio Build Tools.")
+#                 sys.exit(1)
+
+#             dev_cmd_prompt_path = r"C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+#             msbuild_command = f'"{dev_cmd_prompt_path}" && msbuild {ta_lib_path}\\ta-lib-python-master\\makefile.win /p:Configuration=Release'
+
+#             # Run the MSBuild command through subprocess
+#             run_command(msbuild_command)
+#         else:
+#             # For Unix-based systems, use the typical build process
+#             run_command(f"cd {ta_lib_path} && ./configure && make && sudo make install")
+
+#         print(f"[{GREEN} OK {RESET}] TA-Lib installed.")
+#         logging.info("TA-Lib installed.")
+        
+#     except Exception as e:
+#         print(f"[{RED}FAILED{RESET}] Error installing TA-Lib: {e}")
+#         logging.error(f"Error installing TA-Lib: {e}")
+#         sys.exit(1)
+
 # Dependencies Check
 def dependencies_installed(venv_path):
     pip_path = venv_path / "Scripts" / "pip" if os.name == "nt" else venv_path / "bin" / "pip"
@@ -89,8 +172,11 @@ def dependencies_installed(venv_path):
             req = req.strip()
             if req:  # Skip empty lines
                 # Skip ta-lib dependency checking entirely
-                if "TA_Lib" in req:
-                    continue  # Skip checking ta-lib and move to the next package
+                if "ta-lib" in req.lower():
+                    # print(f"[{GREEN} -- {RESET}] Installing TA-Lib requires Visual C++. Ensuring it's installed...")
+                    # logging.info(f"Installing TA-Lib requires Visual C++. Ensuring it's installed...")
+                    # install_ta_lib()
+                    continue
 
                 # Check if the package is already installed
                 result = subprocess.run(

@@ -21,4 +21,4 @@ Welcome to README file for PSARST!
 
 # Disable Antivirus for the executable to run without interruptions.
 
-# The executable and ta-lib wheel file only supports 64-bit architecture. You can download the ta-lib wheel file according to your system specs manually in case of any errors and run 'PSARST.py' from an IDE after installing the necessary packages
+# The executable and ta-lib wheel file only supports 64-bit architecture. You can download the ta-lib wheel file according to your system specs manually in case of any errors and run 'PSARST.py' from an IDE after installing the necessary packages. I have included two wheel files compatible with 64 bit systems and python 3.11.1. Install whichever works for you.
