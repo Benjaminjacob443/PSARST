@@ -7,11 +7,14 @@ import datetime
 import re
 import logging
 import platform
+from colorama import init, Fore, Style
 
-# ANSI escape codes
-RED = "\033[31m"
-GREEN = "\033[32m"
-RESET = "\033[0m"  # Reset color to default
+# Initialize colorama
+init()
+
+RED = Fore.RED
+GREEN = Fore.GREEN
+RESET = Style.RESET_ALL
 
 # Constants
 VENV_NAME = "psarst_env"  # Name of the virtual environment
@@ -199,7 +202,13 @@ def main():
         print(f"[{GREEN} -- {RESET}] Virtual environment exists. Checking Python version and dependencies...")
         logging.info("Virtual environment exists. Checking Python version and dependencies...")
 
-        if check_python_version(venv_path) and dependencies_installed(venv_path):
+        # Ensure Python version is installed in the virtual environment
+        if not check_python_version(venv_path):
+            print(f"[{RED} FAILED {RESET}] Python version in the virtual environment is incorrect.")
+            logging.error("Python version in the virtual environment is incorrect. Reinstalling Python...")
+            install_python_in_venv(venv_path)
+
+        if dependencies_installed(venv_path):
             print(f"[{GREEN} OK {RESET}] The virtual environment is valid, with the correct Python version and dependencies.")
             logging.info("The virtual environment is valid, with the correct Python version and dependencies.")
         else:
@@ -212,10 +221,6 @@ def main():
         logging.error("Virtual environment does not exist or is invalid.")
         create_new_venv(venv_path)
         install_requirements(venv_path)
-
-    # Ensure Python version is installed in the virtual environment
-    if not check_python_version(venv_path):
-        install_python_in_venv(venv_path)
 
     # Run the main script
     try:
