@@ -1,5 +1,6 @@
 import os
 import subprocess
+subprocess.run("python -m pip install colorama", check=True, shell=True)
 from pathlib import Path
 import sys
 import shutil
@@ -26,7 +27,6 @@ PYTHON_INSTALLER = "python-installer.exe"
 LOCAL_PYTHON_DIR = "local_python"
 TA_LIB_URL = "https://github.com/mrjbq7/ta-lib/archive/refs/heads/master.zip"
 TA_LIB_DIR = "ta-lib-master"
-
 
 requirements_path = Path(REQUIREMENTS_FILE)
 SCRIPT_PATH = "PSARST.py"
@@ -83,7 +83,7 @@ def dependencies_installed(venv_path):
         # Check if the requirements file exists
         if not requirements_path.exists():
             raise FileNotFoundError(f"Requirements file '{requirements_path}' not found.")
-        
+
         # Open the requirements file
         with open(requirements_path, "r") as f:
             requirements = f.readlines()
@@ -110,12 +110,12 @@ def dependencies_installed(venv_path):
                     )
                     installed_version = installed_version.stdout.decode().strip().split('\n')[1].split(': ')[1]
                     installed_version = clean_version(installed_version)  # Clean the version string
-                    
+
                     # Compare with required version if specified
                     if "==" in req:
                         required_version = req.split("==")[1]
                         required_version = clean_version(required_version)  # Clean the required version string
-                        
+
                         if installed_version != required_version:
                             print(f"[{RED} VERSION MISMATCH {RESET}] {req} installed version {installed_version} doesn't match required {required_version}.")
                             logging.error(f"{req} installed version {installed_version} doesn't match required {required_version}.")
@@ -207,16 +207,36 @@ def main():
         logging.error(f"Requirements file '{REQUIREMENTS_FILE}' not found.")
         sys.exit(1)
 
-    # Check Python version and create virtual environment
-    python_exe = check_or_install_python()
+    # Check if virtual environment exists
     if not venv_exists(venv_path):
         print(f"[{RED}MISSING{RESET}] Virtual environment does not exist. Creating...")
         logging.info("Virtual environment does not exist. Creating a new one...")
+
+        # Ensure required Python version is installed
+        python_exe = check_or_install_python()
+
         create_new_venv(venv_path)
         install_requirements(venv_path)
     else:
-        print(f"[ {GREEN}OK{RESET} ] Virtual environment exists. Validating dependencies...")
-        logging.info("Virtual environment exists. Validating dependencies...")
+        print(f"[{GREEN} OK {RESET}] Virtual environment exists. Validating...")
+        logging.info("Virtual environment exists. Validating...")
+
+        # Check Python version in the virtual environment
+        if not check_python_version(venv_path):
+            print(f"[{RED}FAILED{RESET}] Virtual environment is not using Python {PYTHON_VERSION}. Recreating...")
+            logging.warning(f"Virtual environment is not using Python {PYTHON_VERSION}. Recreating...")
+            shutil.rmtree(venv_path)
+
+            # Ensure required Python version is installed
+            python_exe = check_or_install_python()
+
+            create_new_venv(venv_path)
+            install_requirements(venv_path)
+        else:
+            print(f"[{GREEN} OK {RESET}] Virtual environment is using the correct Python version.")
+            logging.info("Virtual environment is using the correct Python version.")
+
+        # Validate dependencies
         if not dependencies_installed(venv_path):
             print(f"[{RED}MISSING{RESET}] Dependencies are missing or outdated. Installing...")
             logging.warning("Dependencies are missing or outdated. Installing...")
