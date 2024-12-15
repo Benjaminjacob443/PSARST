@@ -110,7 +110,7 @@ def trend_detection(data):
     return data
 
 # Function to simulate the trading strategy using PSAR and SuperTrend
-def psarst_sim(data):
+def psarst_sim_with_trailing_stop(data):
     # Detect trends in the data
     data = trend_detection(data)
     
@@ -126,24 +126,28 @@ def psarst_sim(data):
     data['Signal'] = 'No action'
 
     # Loop through each data point to simulate trades
-    for current in range(0, len(data.index)):
+    for current in range(len(data.index)):
         previous = current - 1
         if buy_position == 0:  # No position open
             # Check for an uptrend and SuperTrend buy signal
-            if data['Trend'][current] == 'Uptrend':
+            if data['Trend'][current] == 'Uptrend' and previous >= 0:
                 if data['SAR'][previous] < data['Close'][current]:
                     data['Signal'][current] = 'Buy'
                     buy_position += 1  # Open a buy position
                     buy_price = data['Close'][current]  # Record buy price
-                    stop_loss = data['Low'][previous]  # Set stop loss at the previous low
-                    target_price = buy_price + (data['ATR'][current] * 3)  # Set target price using ATR
-                    num_of_shares = var / (buy_price - stop_loss)  # Calculate the number of shares to buy
-                    capital_traded = num_of_shares * buy_price  # Calculate capital invested in this trade
-                    
+                    stop_loss = data['Low'][previous]  # Initial stop loss
+                    trailing_stop_loss = stop_loss  # Initialize trailing stop loss
+                    target_price = buy_price + (data['ATR'][current] * 3)  # Set target price
+                    num_of_shares = var / (buy_price - stop_loss)  # Calculate number of shares to buy
+                    capital_traded = num_of_shares * buy_price  # Capital invested in this trade
+
         elif buy_position == 1:  # Position is open
-            # Check if stop loss or target price is hit
-            if data['Close'][current] <= stop_loss or data['Close'][current] >= target_price:
-                data['Signal'][current] = 'Sell' 
+            # Update trailing stop loss
+            trailing_stop_loss = max(trailing_stop_loss, data['Close'][current] - data['ATR'][current])
+            
+            # Check if trailing stop loss or target price is hit
+            if data['Close'][current] <= trailing_stop_loss or data['Close'][current] >= target_price:
+                data['Signal'][current] = 'Sell'
                 buy_position = 0  # Close the position
                 sell_price = data['Close'][current]  # Record sell price
                 capital_rec = sell_price * num_of_shares  # Capital received from selling
@@ -158,10 +162,10 @@ def psarst_sim(data):
     return_percent = (total_return / capital) * 100
     mean_pnl = np.mean(returns_per_trade)
     std_dev_pnl = np.std(returns_per_trade, ddof=1)
-    sharpe_ratio = np.sqrt(number_of_trades) * (mean_pnl / std_dev_pnl)
-    loss_count = len(list(filter(lambda x: (x < 0), returns_per_trade)))  # Count of losing trades
-    win_count = len(list(filter(lambda x: (x > 0), returns_per_trade)))  # Count of winning trades
-    win_rate = win_count / number_of_trades  # Winning percentage
+    sharpe_ratio = np.sqrt(number_of_trades) * (mean_pnl / std_dev_pnl) if std_dev_pnl != 0 else 0
+    loss_count = len(list(filter(lambda x: x < 0, returns_per_trade)))  # Count of losing trades
+    win_count = len(list(filter(lambda x: x > 0, returns_per_trade)))  # Count of winning trades
+    win_rate = win_count / number_of_trades if number_of_trades > 0 else 0  # Winning percentage
 
     # Print trade performance metrics
     print('Total Returns: ', total_return)
@@ -169,9 +173,14 @@ def psarst_sim(data):
     print("Returns (%): {}%".format(return_percent))
     print('Sharpe Ratio: ', sharpe_ratio)
     print('Win Rate: {}%'.format(win_rate * 100))
-    print('Max Drawdown: ', ((min([x + capital for x in returns_per_trade]) - 
-                              max([x + capital for x in returns_per_trade])) /
-                             max([x + capital for x in returns_per_trade])) * 100)
+    if number_of_trades > 0:
+        max_drawdown = ((min([x + capital for x in returns_per_trade]) - 
+                         max([x + capital for x in returns_per_trade])) /
+                         max([x + capital for x in returns_per_trade])) * 100
+        print('Max Drawdown: ', max_drawdown)
+    else:
+        print('Max Drawdown: N/A (No trades made)')
+    
     return data
 
 # Function to plot the results, including the price chart, indicators, and signals
@@ -243,5 +252,5 @@ data = extract_data(ticker, start_date, end_date)
 # Apply indicators, detect trends, simulate strategy, and plot results
 indicator_data = indicators(data)
 trend_data = trend_detection(indicator_data)
-sim_data = psarst_sim(indicator_data)
+sim_data = psarst_sim_with_trailing_stop(indicator_data)
 psarst_plot(sim_data)
