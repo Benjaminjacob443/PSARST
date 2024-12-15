@@ -85,7 +85,7 @@ def indicators(data):
     data = data[['Open', 'High', 'Low', 'Close', 'Volume', 'RSI', 'ATR', 'SuperTrend']]
     
     # Calculate Parabolic SAR (Stop and Reverse)
-    data['SAR'] = calculate_sar(data['High'], data['Low'], acceleration=0.02, maximum=0.2)
+    data['SAR'] = calculate_sar(data['High'], data['Low'], acceleration=0.02, max_acceleration=0.2)
     
     # Drop any rows with missing values
     data.dropna(inplace=True)
